@@ -3,6 +3,7 @@
 
 #include <string>
 #include <deque>
+#include <stdexcept>
 
 //! \brief An in-order byte stream.
 

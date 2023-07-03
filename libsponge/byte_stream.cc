@@ -17,6 +17,10 @@ size_t ByteStream::write(const string &data) {
 
 //! \param[in] len bytes will be copied from the output side of the buffer
 string ByteStream::peek_output(const size_t len) const {
+    if(len > buffer_size()){
+        // error
+        throw out_of_range("ByteStream::peek_output");
+    }
     string ret{};
     ret.append(_container.begin(), _container.begin()+len);
     return ret;
@@ -24,6 +28,10 @@ string ByteStream::peek_output(const size_t len) const {
 
 //! \param[in] len bytes will be removed from the output side of the buffer
 void ByteStream::pop_output(const size_t len) {
+    if(len > buffer_size()){
+        // error
+        throw out_of_range("ByteStream::pop_output");
+    }
     _container.erase(_container.begin(), _container.begin()+len);
     _bytes_read += len;
 }

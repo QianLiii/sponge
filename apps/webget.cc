@@ -14,7 +14,7 @@ void get_URL(const string &host, const string &path) {
     + host + "\r\nConnection: close\r\n\r\n");
     sock.write(request);
     while (not sock.eof()) {
-        cout << sock.read() << "\n";
+        cout << sock.read();
     }
     sock.close();
     // You will need to connect to the "http" service on
