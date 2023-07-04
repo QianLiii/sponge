@@ -25,3 +25,9 @@ update：成功通过，错误原因：打印读数据时使用了cout << sock.r
 4 关于eof，一开始考虑用_eof_index记录设置了eof的子串的最后一个字节索引，当_eof_index之前的字节全部被提交给stream了（通过_first_unassembled判断）就可以关闭；  
 但根据测试用例发现如果直接传一个index=0, eof=false的空串就错了，因为_eof_index默认初始化为0，不管有没有设置eof流都会直接被关闭。
 因此又增加了标志位_wait_eof，当一次push_substring设置了eof后进入等待eof状态，然后才能根据索引判断。  
+
+通过测试：  
+![success](https://github.com/QianLiii/sponge/assets/91267727/96929e37-51fc-495b-8d0f-e459ee4f83af)
+
+## Lab2
+
