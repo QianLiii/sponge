@@ -5,16 +5,28 @@
 
 #include <cstdint>
 #include <string>
+#include <map>
+#include <vector>
 
 //! \brief A class that assembles a series of excerpts from a byte stream (possibly out of order,
 //! possibly overlapping) into an in-order byte stream.
 class StreamReassembler {
   private:
     // Your code here -- add private members as necessary.
-
+    std::map<uint64_t, std::string> _container{};
     ByteStream _output;  //!< The reassembled in-order byte stream
     size_t _capacity;    //!< The maximum number of bytes
+    size_t _unassembled_bytes{};
+    size_t _first_unassembled{};
+    // 当一个push_substring收到了eof，将reassembler设为等待eof状态，并记录下当次请求的data的最后一个字节的index
+    // 当所有index都被组装并提交到stream后，才真的eof
+    bool _wait_eof{};
+    size_t _eof_index{};
 
+    // 将push_substring收到的子串的适当部分合并入_container
+    size_t _merge(std::map<uint64_t, std::string>::iterator start_it);
+    // 将可提交部分提交给stream
+    void _submit_to_stream();
   public:
     //! \brief Construct a `StreamReassembler` that will store up to `capacity` bytes.
     //! \note This capacity limits both the bytes that have been reassembled,
@@ -41,11 +53,11 @@ class StreamReassembler {
     //!
     //! \note If the byte at a particular index has been pushed more than once, it
     //! should only be counted once for the purpose of this function.
-    size_t unassembled_bytes() const;
+    size_t unassembled_bytes() const {return _unassembled_bytes;}
 
     //! \brief Is the internal state empty (other than the output stream)?
     //! \returns `true` if no substrings are waiting to be assembled
-    bool empty() const;
+    bool empty() const {return _container.empty();}
 };
 
 #endif  // SPONGE_LIBSPONGE_STREAM_REASSEMBLER_HH
