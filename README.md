@@ -31,3 +31,16 @@ update：成功通过，错误原因：打印读数据时使用了cout << sock.r
 
 ## Lab2
 
+遇到的问题/要点：  
+1 wrapping_integers的实现思路：  
+wrap方法很直接不说了；unwrap方法的思路是，先求n和isn的差，这是一个32位带符号数并且可能是负的，但没有关系，直接强转成无符号（正值不会变，负值加上2^32）作为最终结果的初值ballpark。然后比较ballpark和checkpoint的大小，小了就+2^32，大了就-2^32。在ballpark即将“越过”checkpoint的时候，要比较一下越过前后的差值大小，保留小的。另外在改变ballpark时还需要注意可能溢出,比如checkpoint < ballpark < 2^32，那ballpark也不能再减小了，否则就溢出了。感觉这里的代码写的很直接（丑陋），或许可以优化一下。  
+*小插曲：一开始打印log语句注释掉之后忘记重新make了，导致roundtrip这个测试运行了几分钟都没反应。。下次注意。  
+2 receiver中，一开始想不到这里怎么获取到first_unassembled的数据，仔细翻了一遍前面的代码后在byte_stream里找到了bytes_written()这个函数，写入流的总字节数，其实就是first_unassembled。  
+3 指导书里说checkpoint是"the index of the last reassembled byte"，但感觉这样的话首个字符串就不能统一表示？还没有任何字符提交到流时应该是多少呢？  
+所以用的仍然是bytes_written()，目前看没问题。  
+4 搞清楚seqno, absolute seqno, index之间的关系很重要。在unwrap了seqno之后得到的是absolute seqno，而push_substring需要的是index，所以传参时还需要-1。  
+syn和fin标识都具有**seqno**，但没有**index**，因此是不需要向流里传入什么东西的，但在有syn标识的段里，要将它的负载的**seqno**增加1。  
+5 不是设置了fin标识后，就能马上得到对fin的确认，还是要等到流真的关闭了（用流的input_ended()检查）才能确认。
+
+通过测试：  
+![success](https://github.com/QianLiii/sponge/assets/91267727/7c05edf0-5d10-42fc-9e75-42562e6ee7c1)
