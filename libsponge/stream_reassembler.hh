@@ -11,6 +11,7 @@
 //! \brief A class that assembles a series of excerpts from a byte stream (possibly out of order,
 //! possibly overlapping) into an in-order byte stream.
 class StreamReassembler {
+  friend class TCPReceriver;
   private:
     // Your code here -- add private members as necessary.
     std::map<uint64_t, std::string> _container{};

@@ -18,50 +18,56 @@ StreamReassembler::StreamReassembler(const size_t capacity) : _output(capacity),
 //! possibly out-of-order, from the logical stream, and assembles any newly
 //! contiguous substrings and writes them into the output stream in order.
 void StreamReassembler::push_substring(const string &data, const size_t index, const bool eof) {
-    size_t _first_unacceptable = _first_unassembled + _capacity - _output.buffer_size();
-    // 丢弃index超出限制的子串
-    if(index >= _first_unacceptable){
+    if(data.size() == 0) {
         // do nothing
     }
-    // data的全部已被提交，丢弃
-    else if(index + data.size() <= _first_unassembled){
-        // do nothing
-    }
-    // 先暂存入_container，然后执行合并
     else {
-        // 暂存部分，不会超过_first_unassembled和_first_unacceptable这个区间
-        size_t start_index = _first_unassembled > index ? _first_unassembled : index;
-        size_t end_index = index + data.size() > _first_unacceptable ? _first_unacceptable : index + data.size();
-        size_t _added_bytes = end_index - start_index;
-        bool _discard{};
-        auto temp = make_pair(start_index, data.substr(start_index - index, end_index - start_index));
-        // 如果有首字节重合的，选择长度长的留下
-        if(_container.find(start_index) != _container.end()) {
-            // 原先的长，直接丢弃新的
-            if(_container.find(start_index)->second.size() >= temp.second.size()) {
-                _discard = true;
-            }
-            // 新的长
-            else {
-                _added_bytes -= _container.find(start_index)->second.size();
-                _container.find(start_index)->second = temp.second;
-            }
+        size_t _first_unacceptable = _first_unassembled + _capacity - _output.buffer_size();
+        // 丢弃index超出限制的子串
+        if (index >= _first_unacceptable) {
+            // do nothing
         }
-        // 首字节不重合就可以直接暂存
+        // data的全部已被提交，丢弃
+        else if (index + data.size() <= _first_unassembled) {
+            // do nothing
+        }
+        // 先暂存入_container，然后执行合并
         else {
-            _container.insert(temp);
-        }
-        if (not _discard) {
-            // 开始检查是否合并，要么从暂存子串开始，要么从它的前一个开始
-            auto start_it = _container.find(start_index) == _container.begin() ? _container.begin()
-                                                                               : --_container.find(start_index);
-            _added_bytes -= _merge(start_it);
-            // 更新未提交的字符数
-            _unassembled_bytes += _added_bytes;
-            // 提交（可能成功，也可能什么都不做），同时会更新_unassembled_bytes和_first_unassembled
-            _submit_to_stream();
+            // 暂存部分，不会超过_first_unassembled和_first_unacceptable这个区间
+            size_t start_index = _first_unassembled > index ? _first_unassembled : index;
+            size_t end_index = index + data.size() > _first_unacceptable ? _first_unacceptable : index + data.size();
+            size_t _added_bytes = end_index - start_index;
+            bool _discard{};
+            auto temp = make_pair(start_index, data.substr(start_index - index, end_index - start_index));
+            // 如果有首字节重合的，选择长度长的留下
+            if (_container.find(start_index) != _container.end()) {
+                // 原先的长，直接丢弃新的
+                if (_container.find(start_index)->second.size() >= temp.second.size()) {
+                    _discard = true;
+                }
+                // 新的长
+                else {
+                    _added_bytes -= _container.find(start_index)->second.size();
+                    _container.find(start_index)->second = temp.second;
+                }
+            }
+            // 首字节不重合就可以直接暂存
+            else {
+                _container.insert(temp);
+            }
+            if (not _discard) {
+                // 开始检查是否合并，要么从暂存子串开始，要么从它的前一个开始
+                auto start_it = _container.find(start_index) == _container.begin() ? _container.begin()
+                                                                                   : --_container.find(start_index);
+                _added_bytes -= _merge(start_it);
+                // 更新未提交的字符数
+                _unassembled_bytes += _added_bytes;
+                // 提交（可能成功，也可能什么都不做），同时会更新_unassembled_bytes和_first_unassembled
+                _submit_to_stream();
+            }
         }
     }
+    
     // 记录流的最后一个字符的索引
     if(eof){
         _wait_eof = true;
