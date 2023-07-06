@@ -9,6 +9,20 @@
 #include <functional>
 #include <queue>
 
+class RetxTimer {
+  private:
+    bool _started{};
+    size_t _start_time{};
+    uint32_t _RTO{};
+    
+  public:
+    RetxTimer() {}
+    void start(size_t current_time, uint32_t RTO);
+    bool expired(size_t current_time) {return current_time - _start_time >= _RTO;}
+    void stop() {_started = false;}
+    bool is_start() const {return _started;}
+};
+
 //! \brief The "sender" part of a TCP implementation.
 
 //! Accepts a ByteStream, divides it up into segments and sends the
@@ -31,6 +45,24 @@ class TCPSender {
 
     //! the (absolute) sequence number for the next byte to be sent
     uint64_t _next_seqno{0};
+    // _next_seqno只和总共发出多少字节有关，跟_newest_ackno无关
+
+    // left edge of the window
+    uint64_t _newest_ackno{};
+    // length of the window
+    uint16_t _window_size{1};
+    // 重传队列
+    std::queue<TCPSegment> _retx_queue{};
+    // 发出还未被确认的（重传队列中的总长度）
+    uint64_t _bytes_in_flight{};
+    // 总存活时间（通过tick更新）
+    size_t _alive_time{};
+    // RTO
+    uint32_t _RTO;
+    // 连续重传次数
+    uint32_t _consecutive_retxs{};
+    // 重传计时器
+    RetxTimer _timer{};
 
   public:
     //! Initialize a TCPSender
@@ -66,10 +98,10 @@ class TCPSender {
     //! \brief How many sequence numbers are occupied by segments sent but not yet acknowledged?
     //! \note count is in "sequence space," i.e. SYN and FIN each count for one byte
     //! (see TCPSegment::length_in_sequence_space())
-    size_t bytes_in_flight() const;
+    size_t bytes_in_flight() const {return _bytes_in_flight;}
 
     //! \brief Number of consecutive retransmissions that have occurred in a row
-    unsigned int consecutive_retransmissions() const;
+    unsigned int consecutive_retransmissions() const {return _consecutive_retxs;}
 
     //! \brief TCPSegments that the TCPSender has enqueued for transmission.
     //! \note These must be dequeued and sent by the TCPConnection,
