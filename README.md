@@ -44,3 +44,38 @@ syn和fin标识都具有**seqno**，但没有**index**，因此是不需要向�
 
 通过测试：  
 ![success](https://github.com/QianLiii/sponge/assets/91267727/7c05edf0-5d10-42fc-9e75-42562e6ee7c1)
+
+## Lab3
+
+遇到的问题/要点：  
+1 这个Lab的debug时间比较久，一些细节上指导书说的并不清楚（或者是我理解得不到位），要看着测试报的错推断是哪里不符合要求。 
+2 一开始遇到send_retx测试过不了，看了好多遍测试结果之后观察到，rto超过60000时好像就会出现问题。然后发现我的timer接收的rto类型是uint16（被给的rto初始值的类型影响了），应该换成uint32。  
+3 指导书里只说了当收到确认时，如果重传队列里还有segment，就要重启计时器；那么别忘了，如果没有就要关闭计时器。（我的实现中，计时器分 开启、超时、关闭 三个状态）。  
+4 ack_received函数总体按照指导书给的步骤就可以，但根据测试，也有一些别的需要注意的：  
+注意**有意义的**确认号的条件：比_newest_ackno大，但不大于_next_ackno；  
+收到确认时**总是**会更新窗口大小，不管确认号是否有意义；  
+如果重传队列不空，就要重启计时器，那么别忘了，如果为空就要关闭计时器。  
+5 这里说一下我的timer实现思路：  
+用start方法开启一个timer，接收两个参数，当前时间和RTO。
+在tick方法更新时间后，会用expired方法（接收当前时间）判断之前开启的计时器是否到期。  
+还有一个stop方法关闭计时器，一个is_start方法判断计时器是否被开启（过）。  
+也就是说timer有三个状态：开启（未到期），开启（到期）和关闭。  
+6 fill_window函数是花时间最久的地方，整体思路改了又改，这里理解并使用指导书3.3节的状态图很重要。  
+我的代码总体思路如下：  
+首先判断是否要发SYN，发出SYN的唯一条件是_next_seqno == 0。  
+然后根据可发送数据的条件判断是否进入发送数据的循环：  
+可以发送数据的条件有  
+1）SYN被确认（_newest_ackno > 0）；  
+2）窗口有空余（_newest_ackno + max(_window_size, static_cast<uint16_t>(1u)) > _next_seqno）画图就明白，还处理了通告窗口为0的情况；  
+3）未发送过FIN（_next_seqno != _stream.bytes_written() + 2）；  
+进入循环后还要检测是否**有数据可发**，如果流未结束但buffer为空，应该直接退出。一开始各种陷入死循环就是这里理解错了，lab实现的是**单线程**的，如果没有要发的数据就应该直接退出，而不是在while里等待。  
+之后就是装配上尽可能大的负载，再判断是否要加上FIN。  
+加上FIN标记的条件：  
+1）流结束（_stream.eof()）；  
+2）还没发送过FIN（_next_seqno < _stream.bytes_written() + 2）；  
+3）可用窗口中放得下（length < _newest_ackno + max(_window_size, static_cast<uint16_t>(1u)) - _next_seqno），也就是说FIN不可以无脑加在最后一个segment上，如果窗口正好只能放下最后的负载，那就必须等窗口再向后滑动后，单独发一个只包含FIN的空segment。
+
+通过测试：  
+![success](https://github.com/QianLiii/sponge/assets/91267727/a11cf363-994b-4de1-8a78-da505e091f57)
+
+
