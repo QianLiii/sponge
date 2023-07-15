@@ -105,4 +105,4 @@ _sender.stream_in().eof() and (_sender.next_seqno_absolute() == _sender.stream_i
 零窗口测试，也可以正常发送：  
 ![zerowin](https://github.com/QianLiii/sponge/assets/91267727/82bc3539-8d93-48dc-84f3-95eda685a13b)
 
-
+5 在将socket替换成cs144socket时发现一个问题：在结束时会抛出异常bad file descriptor，查到可能是在socket关闭后又去调用，然后发现get_URL函数只需要在最后调用wait_until_closed，而**不再需要（在之前或之后）**显式调用close函数，因为wait_until_closed也完成了关闭socket的工作（根据注释）。  
