@@ -21,6 +21,18 @@ class TCPConnection {
     //! in case the remote TCPConnection doesn't know we've received its whole stream?
     bool _linger_after_streams_finish{true};
 
+    // connection的总持续时间
+    size_t _alive_time{};
+    // 上一次收到segment的时间
+    size_t _last_seg_received_time{};
+    // 最新收到的确认号
+    WrappingInt32 _newest_received_ackno{0};
+
+    // 从sender的发送队列取出segment（直到取完），装载上必要的部分后压入connection的队列
+    void _pop_and_send();
+    // 发一个带RST标识的包，并把sender和receiver设置为error状态
+    void _send_rst();
+
   public:
     //! \name "Input" interface for the writer
     //!@{
@@ -33,7 +45,7 @@ class TCPConnection {
     size_t write(const std::string &data);
 
     //! \returns the number of `bytes` that can be written right now.
-    size_t remaining_outbound_capacity() const;
+    size_t remaining_outbound_capacity() const {return _sender.stream_in().remaining_capacity();}
 
     //! \brief Shut down the outbound byte stream (still allows reading incoming data)
     void end_input_stream();
@@ -50,11 +62,11 @@ class TCPConnection {
 
     //!@{
     //! \brief number of bytes sent and not yet acknowledged, counting SYN/FIN each as one byte
-    size_t bytes_in_flight() const;
+    size_t bytes_in_flight() const {return _sender.bytes_in_flight();}
     //! \brief number of bytes not yet reassembled
-    size_t unassembled_bytes() const;
+    size_t unassembled_bytes() const {return _receiver.unassembled_bytes();}
     //! \brief Number of milliseconds since the last segment was received
-    size_t time_since_last_segment_received() const;
+    size_t time_since_last_segment_received() const {return _alive_time - _last_seg_received_time;}
     //!< \brief summarize the state of the sender, receiver, and the connection
     TCPState state() const { return {_sender, _receiver, active(), _linger_after_streams_finish}; };
     //!@}
