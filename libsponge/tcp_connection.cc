@@ -6,7 +6,8 @@ using namespace std;
 
 void TCPConnection::_pop_and_send() {
     while (not _sender.segments_out().empty()) {
-        TCPSegment &&first = std::move(_sender.segments_out().front());
+        // TCPSegment &&first = std::move(_sender.segments_out().front());
+        TCPSegment first = _sender.segments_out().front();
         _sender.segments_out().pop();
         if (_receiver.ackno().has_value()) {
             first.header().ack = true;
