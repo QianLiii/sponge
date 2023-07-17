@@ -83,7 +83,7 @@ syn和fin标识都具有**seqno**，但没有**index**，因此是不需要向�
 遇到的问题/要点：  
 1 这个lab看完指导书没有什么思路，感觉无从下手，看了代码给出的公共接口，也不太清楚哪个功能该放在哪个函数里实现。所以按照指导书“how to start”的建议，先完成了几个最简单的函数，其他功能大致按照对指导书的理解简单写了下。  
 2 然后就开始面向测试用例编程：单独运行build/tests目录下的fsm_打头的文件，一个一个来，照着模拟测试给出的信息去完善代码，全都通过了代码大致上的实现就搞定了。  
-3 这时候遇到了一个问题：模拟测试都能过，但真实测试全都过不了，按照testing一节的测试方法，在关闭连接时，输入ctrl+D后也会直接出现段错误并结束进程。为了确认问题是出在connection还是之前的代码中，拷贝了https://github.com/Kiprey/sponge/的tcp_connection代码来进行测试，通过了161/162，可以确定之前写的sender、receiver包括wrapping_integers这些基本没有大问题，问题还是出在connection上。  
+3 这时候遇到了一个问题：模拟测试都能过，但真实测试全都过不了，按照testing一节的测试方法，在关闭连接时，输入ctrl+D后也会直接出现段错误并结束进程。为了确认问题是出在connection还是之前的代码中，拷贝了<https://github.com/Kiprey/sponge/>的tcp_connection代码来进行测试，通过了161/162，可以确定之前写的sender、receiver包括wrapping_integers这些基本没有大问题，问题还是出在connection上。  
 4 然后经过漫长的寻找，找到了错误原因：  
 在active函数里，判断sender是否处在FIN_ACKED状态，即满足prereq#3时，我用的条件是：
 
@@ -105,4 +105,9 @@ _sender.stream_in().eof() and (_sender.next_seqno_absolute() == _sender.stream_i
 零窗口测试，也可以正常发送：  
 ![zerowin](https://github.com/QianLiii/sponge/assets/91267727/82bc3539-8d93-48dc-84f3-95eda685a13b)
 
-5 在将socket替换成cs144socket时发现一个问题：在结束时会抛出异常bad file descriptor，查到可能是在socket关闭后又去调用，然后发现get_URL函数只需要在最后调用wait_until_closed，而**不再需要（在之前或之后）**显式调用close函数，因为wait_until_closed也完成了关闭socket的工作（根据注释）。  
+5 在将socket替换成cs144socket时发现一个问题：在结束时会抛出异常bad file descriptor，查到可能是在socket关闭后又去调用，然后发现get_URL函数只需要在最后调用wait_until_closed，而**不再需要**显式调用close函数，因为wait_until_closed也完成了关闭socket的工作（根据注释）。  
+![webget](https://github.com/QianLiii/sponge/assets/91267727/1de3ce75-1bf0-4e60-bb25-f933e83ec62d)
+
+6 最后处理完成的问题是通过benchmark。尝试使用Kiprey的connection和wrapingintegers，可以运行benchmark。然后去看benchmark源码，尝试把测试的字符串长度改小，改到16 * 1024 * 1024时我的代码可以运行；24 * 1024 * 1024时会出现unclean shutdown警告（说明运行了connection的析构函数）。然后参考Kiprey的代码，在我的析构函数中不发送rst包而只是设流为error，这次运行出现了std::bad_alloc，然后思考了一下哪里涉及到自己操作内存了，就去把_pop_and_send函数里的右值引用和std:move换成了普通的拷贝，然后就通过了。  
+![benchmark](https://github.com/QianLiii/sponge/assets/91267727/dacacffe-a5e5-4d2d-a3ed-060abd022b22)
+
