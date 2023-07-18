@@ -111,3 +111,14 @@ _sender.stream_in().eof() and (_sender.next_seqno_absolute() == _sender.stream_i
 6 最后处理完成的问题是通过benchmark。尝试使用Kiprey的connection和wrapingintegers，可以运行benchmark。然后去看benchmark源码，尝试把测试的字符串长度改小，改到16 * 1024 * 1024时我的代码可以运行；24 * 1024 * 1024时会出现unclean shutdown警告（说明运行了connection的析构函数）。然后参考Kiprey的代码，在我的析构函数中不发送rst包而只是设流为error，这次运行出现了std::bad_alloc，然后思考了一下哪里涉及到自己操作内存了，就去把_pop_and_send函数里的右值引用和std:move换成了普通的拷贝，然后就通过了。  
 ![benchmark](https://github.com/QianLiii/sponge/assets/91267727/dacacffe-a5e5-4d2d-a3ed-060abd022b22)
 
+## Lab5
+
+遇到的问题/要点：  
+1 这个lab基本跟着指导书写就可以，简化了很多细节。  
+2 映射表我采用的是map<uint32_t, std::pair<EthernetAddress, size_t>>，就是ip地址映射到（以太网地址，存活时间）这样一个二元组。  
+3 记得在收到arp报文后尝试发送等待队列里的ip报文，由于是简化版本的，不需要考虑一个ip报文一直得不到目标以太网地址而“积压”在等待队列里的情况，只要一直发出队首，直到队空或有一个还要等待为止。  
+4 还有使用map记得注意map的迭代器失效情况。
+
+![success](https://github.com/QianLiii/sponge/assets/91267727/429f94d7-9499-4145-8e7e-81475b59d726)
+
+## Lab6
