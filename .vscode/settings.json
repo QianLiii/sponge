@@ -2,7 +2,9 @@
     "files.associations": {
         "string_view": "cpp",
         "cmath": "cpp",
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "ostream": "cpp",
+        "bitset": "cpp"
     },
     "cmake.configureOnOpen": false
 }
