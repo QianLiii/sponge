@@ -122,3 +122,9 @@ _sender.stream_in().eof() and (_sender.next_seqno_absolute() == _sender.stream_i
 ![success](https://github.com/QianLiii/sponge/assets/91267727/429f94d7-9499-4145-8e7e-81475b59d726)
 
 ## Lab6
+
+遇到的问题/要点：  
+1 路由表使用的数据结构，是std::vector<std::map<uint32_t, std::pair<std::optional<Address>, size_t>>>，vector有33个元素对应了掩码长度0~32，map的键是网络号，值是下一跳地址和端口地址。  
+2 第一次完成的时候，在遇到默认路由时会失败；检查发现uint32_t类型在左移32位时不会变成全0，而是会变成全1。解决方法是改用bitset<32>。  
+
+![success](https://github.com/QianLiii/sponge/assets/91267727/5dcfba73-0b70-4b53-b022-82df96c38982)
