@@ -128,3 +128,8 @@ _sender.stream_in().eof() and (_sender.next_seqno_absolute() == _sender.stream_i
 2 第一次完成的时候，在遇到默认路由时会失败；检查发现uint32_t类型在左移32位时不会变成全0，而是会变成全1。解决方法是改用bitset<32>。  
 
 ![success](https://github.com/QianLiii/sponge/assets/91267727/5dcfba73-0b70-4b53-b022-82df96c38982)
+
+## Lab7
+
+自己简单测试：  
+![success](https://github.com/QianLiii/sponge/assets/91267727/7e187026-e706-416c-84ab-61bde3f81fe2)
