@@ -11,6 +11,8 @@ update：成功通过，错误原因：打印读数据时使用了cout << sock.r
 现在lab0都通过了：  
 ![success](https://github.com/QianLiii/sponge/assets/91267727/20173ebb-4d04-4681-b4a3-e991924b6917)
 
+*以上实验用的是课程提供的虚拟机，但由于后续想用图形界面，改用了自己下的ubuntu20.04，按照<https://stanford.edu/class/cs144/vm_howto/vm-howto-byo.html>配置好环境。修改networkmanager参照<https://www.cnblogs.com/kalicener/p/17185122.html>。
+
 ## Lab1
 
 遇到的问题/要点：  
